@@ -6,42 +6,44 @@
 <title>Smart Search Box ✨</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-  * {
-    box-sizing: border-box;
-  }
-
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background-color: #0d1117;
-    color: white;
     font-family: "Poppins", sans-serif;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    transition: background 0.5s, color 0.5s;
-    animation: fadeIn 1s ease-in;
+    background: black;
+    position: relative;
+    color: white;
   }
 
-  @keyframes fadeIn {
-    from {opacity: 0;}
-    to {opacity: 1;}
+  /* === Full Screen Star Background === */
+  canvas#space-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% 50%, #000010, #000);
+    z-index: 0;
   }
 
+  /* === Search Box === */
   .search-container {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
-    border: 3px solid transparent;
-    border-radius: 18px;
+    border: 2px solid transparent;
+    border-radius: 15px;
     background-image: linear-gradient(90deg, #161b22, #161b22),
                       linear-gradient(90deg, #F7C58E, #A6F4A0, #A8EFFF);
     background-origin: border-box;
     background-clip: padding-box, border-box;
     padding: 18px 22px;
     width: 480px;
-    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    z-index: 2;
+    box-shadow: 0 0 30px rgba(168,239,255,0.4);
     animation: glowBreath 3s ease-in-out infinite;
   }
 
@@ -53,7 +55,7 @@
   .clock {
     text-align: center;
     font-size: 14px;
-    color: #a0a0a0;
+    color: #aaa;
     margin-bottom: 10px;
   }
 
@@ -104,9 +106,9 @@
 
   .icons {
     display: flex;
-    /* justify-content: space-between; */
     margin-top: 15px;
-    gap: 22px ;
+    gap: 20px;
+    justify-content: left;
   }
 
   .icons i {
@@ -114,37 +116,12 @@
     cursor: pointer;
     opacity: 0.8;
     transition: 0.25s;
-    position: relative;
   }
 
   .icons i:hover {
     opacity: 1;
     transform: scale(1.2);
     text-shadow: 0 0 10px #A8EFFF, 0 0 20px #A8EFFF;
-  }
-
-  /* Ripple Effect */
-  .ripple {
-    position: absolute;
-    border-radius: 50%;
-    transform: scale(0);
-    animation: ripple 0.6s linear;
-    background-color: rgba(255, 255, 255, 0.5);
-    pointer-events: none;
-  }
-
-  @keyframes ripple {
-    to {
-      transform: scale(4);
-      opacity: 0;
-    }
-  }
-
-  .message {
-    margin-top: 15px;
-    color: #cc6464;
-    font-weight: 500;
-    min-height: 25px;
   }
 
   .suggestions {
@@ -167,41 +144,51 @@
     background: #1f2937;
   }
 
+  .message {
+    margin-top: 10px;
+    min-height: 25px;
+    color: #cc6464;
+    text-align: left;
+  }
+
+  /* Ripple Effect */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    background-color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+  }
+  @keyframes ripple {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
   /* Light Mode */
   .light-mode {
     background-color: #e6f1f8;
     color: #000;
   }
-
-  .light-mode input {
-    background: #ffffffa1;
-    color: #000;
-  }
-
   .light-mode .search-container {
     background-image: linear-gradient(90deg, #ffffff, #ffffff),
                       linear-gradient(90deg, #F7C58E, #A6F4A0, #A8EFFF);
-    backdrop-filter: blur(10px);
   }
-
-  .light-mode .icons i:hover {
-    text-shadow: 0 0 10px #00bfff;
-  }
-
 </style>
 </head>
 <body>
 
+<canvas id="space-bg"></canvas>
+
 <div class="search-container">
   <div class="clock" id="clock"></div>
-
   <div class="input-area">
     <input id="userInput" type="text" placeholder="What do you wanna do today?">
     <button class="send-btn" id="sendBtn"><i class="fa-solid fa-arrow-up"></i></button>
   </div>
-
   <div class="suggestions" id="suggestions"></div>
-
   <div class="icons">
     <i class="fa-solid fa-microphone" id="micBtn"></i>
     <i class="fa-solid fa-mouse-pointer" id="clickBtn"></i>
@@ -211,167 +198,172 @@
     <i class="fa-solid fa-moon" id="modeBtn"></i>
     <i class="fa-solid fa-dice" id="luckyBtn"></i>
   </div>
-
   <div class="message" id="messageArea"></div>
   <input type="file" id="fileInput" style="display:none;">
 </div>
 
 <script>
-  const input = document.getElementById("userInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const messageArea = document.getElementById("messageArea");
-  const fileInput = document.getElementById("fileInput");
-  const suggestions = document.getElementById("suggestions");
-  const clock = document.getElementById("clock");
+/* === Starfield Background === */
+const canvas = document.getElementById("space-bg");
+const ctx = canvas.getContext("2d");
+let stars = [];
+let w, h;
 
-  // ⏰ Live Clock
-  setInterval(() => {
-    clock.textContent = new Date().toLocaleTimeString();
-  }, 1000);
-
-  // 🔍 Google Search
-  function searchGoogle(query) {
-    if (query) {
-      const googleUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
-      window.open(googleUrl, "_blank");
-      messageArea.textContent = "🔍 Searching for: " + query;
-      input.value = "";
-      suggestions.style.display = "none";
-    } else {
-      messageArea.textContent = "⚠ Please type something first!";
-    }
+function initStars() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 400; i++) {
+    stars.push({ x: Math.random() * w - w/2, y: Math.random() * h - h/2, z: Math.random() * w });
   }
+}
 
-  sendBtn.addEventListener("click", e => {
-    rippleEffect(e);
-    searchGoogle(input.value.trim());
-  });
+function drawStars() {
+  ctx.fillStyle = "rgba(0, 0, 20, 0.6)";
+  ctx.fillRect(0, 0, w, h);
 
-  input.addEventListener("keypress", e => {
-    if (e.key === "Enter") searchGoogle(input.value.trim());
-  });
-
-  // 🎤 Voice Input
-  document.getElementById("micBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    if ("webkitSpeechRecognition" in window) {
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.start();
-      messageArea.textContent = "🎙 Listening...";
-      recognition.onresult = (event) => {
-        const voiceText = event.results[0][0].transcript;
-        input.value = voiceText;
-        messageArea.textContent = "🎤 You said: " + voiceText;
-        searchGoogle(voiceText);
-      };
-    } else {
-      alert("Your browser does not support voice recognition.");
+  stars.forEach(star => {
+    star.z -= 2;
+    if (star.z <= 0) star.z = w;
+    const k = 128 / star.z;
+    const px = star.x * k + w / 2;
+    const py = star.y * k + h / 2;
+    if (px >= 0 && px <= w && py >= 0 && py <= h) {
+      const size = (1 - star.z / w) * 2;
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fill();
     }
   });
+  requestAnimationFrame(drawStars);
+}
 
-  // 🖱 Pointer Focus
-  document.getElementById("clickBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    input.focus();
-    messageArea.textContent = "🖱 Input activated!";
-  });
+window.addEventListener("resize", initStars);
+initStars();
+drawStars();
 
-  // 📎 File Attach
-  document.getElementById("attachBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    fileInput.click();
-  });
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      messageArea.textContent = "📎 File attached: " + fileInput.files[0].name;
-    }
-  });
+/* === Smart Search JS === */
+const input = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const messageArea = document.getElementById("messageArea");
+const fileInput = document.getElementById("fileInput");
+const suggestions = document.getElementById("suggestions");
+const clock = document.getElementById("clock");
 
-  // ✨ Magic Quotes
-  const aiMessages = [
-    "🚀 Keep pushing boundaries!",
-    "💡 Every click brings you closer to success!",
-    "🌟 Believe in your potential!",
-    "🔥 You are unstoppable!",
-    "🌈 Make today extraordinary!"
-  ];
-  document.getElementById("aiBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    const randomMsg = aiMessages[Math.floor(Math.random() * aiMessages.length)];
-    messageArea.textContent = randomMsg;
-  });
+// ⏰ Live Clock
+setInterval(() => { clock.textContent = new Date().toLocaleTimeString(); }, 1000);
 
-  // 📝 Edit Placeholder
-  document.getElementById("editBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    const newPlaceholder = prompt("Enter new placeholder text:", input.placeholder);
-    if (newPlaceholder) {
-      input.placeholder = newPlaceholder;
-      messageArea.textContent = "📝 Placeholder updated!";
-    }
-  });
-
-  // 🌗 Dark/Light Mode
-  document.getElementById("modeBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    document.body.classList.toggle("light-mode");
-  });
-
-  // 🎲 Feeling Lucky
-  document.getElementById("luckyBtn").addEventListener("click", e => {
-    rippleEffect(e);
-    const query = input.value.trim();
-    if (query) {
-      window.open("https://www.google.com/search?btnI=I&q=" + encodeURIComponent(query), "_blank");
-      messageArea.textContent = "🍀 Feeling lucky with: " + query;
-    } else {
-      messageArea.textContent = "⚠ Enter something first!";
-    }
-  });
-
-  // 💬 Typing Effect for Placeholder
-  const placeholders = ["Search anything...", "Ask AI something...", "Find inspiration...", "Plan your day..."];
-  let i = 0;
-  setInterval(() => {
-    input.placeholder = placeholders[i++ % placeholders.length];
-  }, 3000);
-
-  // 🔠 Suggestions
-  const suggestionWords = ["weather", "news", "AI tools", "coding tips", "space research", "Jupiter", "ISRO latest mission"];
-  input.addEventListener("input", () => {
-    const val = input.value.toLowerCase();
-    suggestions.innerHTML = "";
-    if (!val) return (suggestions.style.display = "none");
-    const filtered = suggestionWords.filter(w => w.toLowerCase().includes(val));
-    filtered.forEach(f => {
-      const div = document.createElement("div");
-      div.textContent = f;
-      div.onclick = () => {
-        input.value = f;
-        searchGoogle(f);
-      };
-      suggestions.appendChild(div);
-    });
-    suggestions.style.display = filtered.length ? "flex" : "none";
-  });
-
-  // ⌨ Shortcut Ctrl + /
-  document.addEventListener("keydown", e => {
-    if (e.ctrlKey && e.key === "/") input.focus();
-  });
-
-  // 🌊 Ripple Effect
-  function rippleEffect(e) {
-    const target = e.currentTarget;
-    const ripple = document.createElement("span");
-    ripple.classList.add("ripple");
-    const rect = target.getBoundingClientRect();
-    ripple.style.left = `${e.clientX - rect.left}px`;
-    ripple.style.top = `${e.clientY - rect.top}px`;
-    target.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
+// 🔍 Google Search
+function searchGoogle(query) {
+  if (query) {
+    const googleUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
+    window.open(googleUrl, "_blank");
+    messageArea.textContent = "🔍 Searching for: " + query;
+    input.value = "";
+    suggestions.style.display = "none";
+  } else {
+    messageArea.textContent = "⚠ Please type something first!";
   }
+}
+
+sendBtn.addEventListener("click", e => { rippleEffect(e); searchGoogle(input.value.trim()); });
+input.addEventListener("keypress", e => { if (e.key === "Enter") searchGoogle(input.value.trim()); });
+
+// 🎤 Voice Input
+document.getElementById("micBtn").addEventListener("click", e => {
+  rippleEffect(e);
+  if ("webkitSpeechRecognition" in window) {
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.start();
+    messageArea.textContent = "🎙 Listening...";
+    recognition.onresult = (event) => {
+      const voiceText = event.results[0][0].transcript;
+      input.value = voiceText;
+      messageArea.textContent = "🎤 You said: " + voiceText;
+      searchGoogle(voiceText);
+    };
+  } else alert("Your browser does not support voice recognition.");
+});
+
+// 🖱 Pointer Focus
+document.getElementById("clickBtn").addEventListener("click", e => {
+  rippleEffect(e); input.focus(); messageArea.textContent = "🖱 Input activated!";
+});
+
+// 📎 File Attach
+document.getElementById("attachBtn").addEventListener("click", e => { rippleEffect(e); fileInput.click(); });
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length > 0) messageArea.textContent = "📎 File attached: " + fileInput.files[0].name;
+});
+
+// ✨ Magic Quotes
+const aiMessages = ["🚀 Keep pushing boundaries!","💡 Every click brings you closer to success!","🌟 Believe in your potential!","🔥 You are unstoppable!","🌈 Make today extraordinary!"];
+document.getElementById("aiBtn").addEventListener("click", e => {
+  rippleEffect(e);
+  const randomMsg = aiMessages[Math.floor(Math.random() * aiMessages.length)];
+  messageArea.textContent = randomMsg;
+});
+
+// 📝 Edit Placeholder
+document.getElementById("editBtn").addEventListener("click", e => {
+  rippleEffect(e);
+  const newPlaceholder = prompt("Enter new placeholder text:", input.placeholder);
+  if (newPlaceholder) { input.placeholder = newPlaceholder; messageArea.textContent = "📝 Placeholder updated!"; }
+});
+
+// 🌗 Dark/Light Mode
+document.getElementById("modeBtn").addEventListener("click", e => {
+  rippleEffect(e);
+  document.body.classList.toggle("light-mode");
+});
+
+// 🎲 Feeling Lucky
+document.getElementById("luckyBtn").addEventListener("click", e => {
+  rippleEffect(e);
+  const query = input.value.trim();
+  if (query) {
+    window.open("https://www.google.com/search?btnI=I&q=" + encodeURIComponent(query), "_blank");
+    messageArea.textContent = "🍀 Feeling lucky with: " + query;
+  } else messageArea.textContent = "⚠ Enter something first!";
+});
+
+// 💬 Typing Effect for Placeholder
+const placeholders = ["Search anything...", "Ask AI something...", "Find inspiration...", "Plan your day..."];
+let i = 0;
+setInterval(() => { input.placeholder = placeholders[i++ % placeholders.length]; }, 3000);
+
+// 🔠 Suggestions
+const suggestionWords = ["weather","news","AI tools","coding tips","space research","Jupiter","ISRO latest mission"];
+input.addEventListener("input", () => {
+  const val = input.value.toLowerCase();
+  suggestions.innerHTML = "";
+  if (!val) return (suggestions.style.display = "none");
+  const filtered = suggestionWords.filter(w => w.toLowerCase().includes(val));
+  filtered.forEach(f => {
+    const div = document.createElement("div");
+    div.textContent = f;
+    div.onclick = () => { input.value = f; searchGoogle(f); };
+    suggestions.appendChild(div);
+  });
+  suggestions.style.display = filtered.length ? "flex" : "none";
+});
+
+// ⌨ Shortcut Ctrl + /
+document.addEventListener("keydown", e => { if (e.ctrlKey && e.key === "/") input.focus(); });
+
+// 🌊 Ripple Effect
+function rippleEffect(e) {
+  const target = e.currentTarget;
+  const ripple = document.createElement("span");
+  ripple.classList.add("ripple");
+  const rect = target.getBoundingClientRect();
+  ripple.style.left = `${e.clientX - rect.left}px`;
+  ripple.style.top = `${e.clientY - rect.top}px`;
+  target.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+}
 </script>
 </body>
 </html>
