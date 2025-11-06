@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Search Box ✨</title>
+<title>Smart Search Box </title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,12 +52,12 @@
     50% { box-shadow: 0 0 35px rgba(168, 239, 255, 0.5); }
   }
 
-  .clock {
+  /* .clock {
     text-align: center;
     font-size: 14px;
     color: #aaa;
     margin-bottom: 10px;
-  }
+  } */
 
   .input-area {
     display: flex;
@@ -183,7 +183,7 @@
 <canvas id="space-bg"></canvas>
 
 <div class="search-container">
-  <div class="clock" id="clock"></div>
+  <!-- <div class="clock" id="clock"></div> -->
   <div class="input-area">
     <input id="userInput" type="text" placeholder="What do you wanna do today?">
     <button class="send-btn" id="sendBtn"><i class="fa-solid fa-arrow-up"></i></button>
@@ -252,7 +252,7 @@ const suggestions = document.getElementById("suggestions");
 const clock = document.getElementById("clock");
 
 // ⏰ Live Clock
-setInterval(() => { clock.textContent = new Date().toLocaleTimeString(); }, 1000);
+//setInterval(() => { clock.textContent = new Date().toLocaleTimeString(); }, 1000);
 
 // 🔍 Google Search
 function searchGoogle(query) {
